@@ -6,18 +6,26 @@ const Dice = () => {
     const saved = localStorage.getItem("diceHistory");
     return saved ? JSON.parse(saved) : [];
   });
+  const [isRolling, setIsRolling] = useState(false);
+  const [permissionGranted, setPermissionGranted] = useState(false);
 
   // Función para lanzar los dados
   const rollDice = () => {
-    const die1 = Math.floor(Math.random() * 6) + 1;
-    const die2 = Math.floor(Math.random() * 6) + 1;
-    const newRoll = [die1, die2];
-    setDice(newRoll);
+    setIsRolling(true); // Activar la animación
 
-    // Actualizar historial en el localStorage
-    const newHistory = [...history, newRoll];
-    setHistory(newHistory);
-    localStorage.setItem("diceHistory", JSON.stringify(newHistory));
+    setTimeout(() => {
+      const die1 = Math.floor(Math.random() * 6) + 1;
+      const die2 = Math.floor(Math.random() * 6) + 1;
+      const newRoll = [die1, die2];
+      setDice(newRoll);
+
+      // Actualizar historial en el localStorage
+      const newHistory = [...history, newRoll];
+      setHistory(newHistory);
+      localStorage.setItem("diceHistory", JSON.stringify(newHistory));
+
+      setIsRolling(false); // Desactivar la animación
+    }, 1000); // Duración de la animación
   };
 
   // Detectar sacudida del móvil
@@ -46,40 +54,74 @@ const Dice = () => {
       lastZ = z;
     };
 
-    // Solicitar permisos en navegadores que lo requieran
-    const requestPermission = async () => {
-      if (typeof DeviceMotionEvent !== "undefined" && typeof DeviceMotionEvent.requestPermission === "function") {
-        try {
-          const permission = await DeviceMotionEvent.requestPermission();
-          if (permission === "granted") {
-            window.addEventListener("devicemotion", handleMotion);
-          }
-        } catch (error) {
-          console.error("Permiso de DeviceMotion denegado:", error);
-        }
-      } else {
-        // Agregar evento directamente si no se necesita permiso
-        window.addEventListener("devicemotion", handleMotion);
-      }
-    };
-
-    requestPermission();
+    if (permissionGranted) {
+      window.addEventListener("devicemotion", handleMotion);
+    }
 
     // Limpiar el evento cuando el componente se desmonte
     return () => {
       window.removeEventListener("devicemotion", handleMotion);
     };
-  }, [history]);
+  }, [permissionGranted]);
+
+  // Solicitar permisos para iOS
+  const requestPermission = async () => {
+    if (
+      typeof DeviceMotionEvent !== "undefined" &&
+      typeof DeviceMotionEvent.requestPermission === "function"
+    ) {
+      try {
+        const permission = await DeviceMotionEvent.requestPermission();
+        if (permission === "granted") {
+          setPermissionGranted(true);
+        } else {
+          alert("Permiso de movimiento denegado.");
+        }
+      } catch (error) {
+        console.error("Error al solicitar permisos:", error);
+      }
+    } else {
+      // Si no es necesario el permiso
+      setPermissionGranted(true);
+    }
+  };
 
   return (
     <div>
       <h1>Lanzar Dados</h1>
+      {!permissionGranted && (
+        <button onClick={requestPermission}>Habilitar Sacudida</button>
+      )}
       <div style={{ display: "flex", justifyContent: "center", gap: "20px" }}>
-        <div className={`die die-${dice[0]}`}>{dice[0]}</div>
-        <div className={`die die-${dice[1]}`}>{dice[1]}</div>
+        <div className={`die ${isRolling ? "rolling" : ""}`}>{dice[0]}</div>
+        <div className={`die ${isRolling ? "rolling" : ""}`}>{dice[1]}</div>
       </div>
-      <button onClick={rollDice}>Lanzar</button>
-      <p>Sacude el móvil para lanzar los dados.</p>
+      <button onClick={rollDice} disabled={isRolling}>
+        {isRolling ? "Lanzando..." : "Lanzar"}
+      </button>
+      <br></br>
+      <br></br>
+      <br></br>
+      <br></br>
+      <button onClick={() => localStorage.clear()}>Limpiar la tabla</button>
+
+      <style>{`
+        .die {
+          width: 50px;
+          height: 50px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 2rem;
+          border: 2px solid black;
+          border-radius: 8px;
+          transition: transform 0.5s ease-in-out;
+        }
+
+        .rolling {
+          transform: rotate(360deg);
+        }
+      `}</style>
     </div>
   );
 };

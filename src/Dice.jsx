@@ -1,4 +1,3 @@
-// Dice.js
 import { useState, useEffect } from "react";
 
 const Dice = () => {
@@ -26,13 +25,13 @@ const Dice = () => {
     let lastX = 0;
     let lastY = 0;
     let lastZ = 0;
-    let threshold = 15; // Sensibilidad de la sacudida
+    const threshold = 15; // Sensibilidad de la sacudida
 
     const handleMotion = (event) => {
-      const { acceleration } = event;
-      if (!acceleration) return;
+      const { accelerationIncludingGravity } = event;
+      if (!accelerationIncludingGravity) return;
 
-      const { x, y, z } = acceleration;
+      const { x, y, z } = accelerationIncludingGravity;
       const deltaX = Math.abs(x - lastX);
       const deltaY = Math.abs(y - lastY);
       const deltaZ = Math.abs(z - lastZ);
@@ -47,14 +46,30 @@ const Dice = () => {
       lastZ = z;
     };
 
-    // Agregar evento de movimiento
-    window.addEventListener("devicemotion", handleMotion);
+    // Solicitar permisos en navegadores que lo requieran
+    const requestPermission = async () => {
+      if (typeof DeviceMotionEvent !== "undefined" && typeof DeviceMotionEvent.requestPermission === "function") {
+        try {
+          const permission = await DeviceMotionEvent.requestPermission();
+          if (permission === "granted") {
+            window.addEventListener("devicemotion", handleMotion);
+          }
+        } catch (error) {
+          console.error("Permiso de DeviceMotion denegado:", error);
+        }
+      } else {
+        // Agregar evento directamente si no se necesita permiso
+        window.addEventListener("devicemotion", handleMotion);
+      }
+    };
+
+    requestPermission();
 
     // Limpiar el evento cuando el componente se desmonte
     return () => {
       window.removeEventListener("devicemotion", handleMotion);
     };
-  }, []);
+  }, [history]);
 
   return (
     <div>

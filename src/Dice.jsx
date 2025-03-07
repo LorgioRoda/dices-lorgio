@@ -1,32 +1,7 @@
 import { useState, useEffect } from "react";
 
 const Dice = () => {
-  const [dice, setDice] = useState([1, 1]);
-  const [history, setHistory] = useState(() => {
-    const saved = localStorage.getItem("diceHistory");
-    return saved ? JSON.parse(saved) : [];
-  });
-  const [isRolling, setIsRolling] = useState(false);
   const [permissionGranted, setPermissionGranted] = useState(false);
-
-  // Función para lanzar los dados
-  const rollDice = () => {
-    setIsRolling(true); // Activar la animación
-
-    setTimeout(() => {
-      const die1 = Math.floor(Math.random() * 6) + 1;
-      const die2 = Math.floor(Math.random() * 6) + 1;
-      const newRoll = [die1, die2];
-      setDice(newRoll);
-
-      // Actualizar historial en el localStorage
-      const newHistory = [...history, newRoll];
-      setHistory(newHistory);
-      localStorage.setItem("diceHistory", JSON.stringify(newHistory));
-
-      setIsRolling(false); // Desactivar la animación
-    }, 1000); // Duración de la animación
-  };
 
   // Detectar sacudida del móvil
   useEffect(() => {
@@ -58,13 +33,11 @@ const Dice = () => {
       window.addEventListener("devicemotion", handleMotion);
     }
 
-    // Limpiar el evento cuando el componente se desmonte
     return () => {
       window.removeEventListener("devicemotion", handleMotion);
     };
   }, [permissionGranted]);
 
-  // Solicitar permisos para iOS
   const requestPermission = async () => {
     if (
       typeof DeviceMotionEvent !== "undefined" &&
@@ -81,7 +54,6 @@ const Dice = () => {
         console.error("Error al solicitar permisos:", error);
       }
     } else {
-      // Si no es necesario el permiso
       setPermissionGranted(true);
     }
   };
@@ -92,13 +64,6 @@ const Dice = () => {
       {!permissionGranted && (
         <button onClick={requestPermission}>Habilitar Sacudida</button>
       )}
-      <div style={{ display: "flex", justifyContent: "center", gap: "20px" }}>
-        <div className={`die ${isRolling ? "rolling" : ""}`}>{dice[0]}</div>
-        <div className={`die ${isRolling ? "rolling" : ""}`}>{dice[1]}</div>
-      </div>
-      <button onClick={rollDice} disabled={isRolling}>
-        {isRolling ? "Lanzando..." : "Lanzar"}
-      </button>
       <br></br>
       <br></br>
       <br></br>
